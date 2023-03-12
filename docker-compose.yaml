@@ -1,0 +1,48 @@
+version: '3.6'
+services:
+
+  jenkins:
+    user: root
+    image: jenkins/jenkins:lts-slim
+    container_name: jenkins
+    networks:
+      - nginx_services
+    volumes:
+      - ./jenkins:/var/jenkins_home
+    environment:
+      - JENKINS_OPTS="--prefix=/jenkins"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 900M
+        reservations:
+          memory: 200M
+  nginx:
+    image: nginx:1.23.3
+    container_name: nginx
+    build:
+      context: ./nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./certbot/www:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+    networks:
+      - nginx_services
+    restart: always
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+    networks:
+      - nginx_services
+
+networks:
+  nginx_services:
+    name: services
+    external:
+      true
